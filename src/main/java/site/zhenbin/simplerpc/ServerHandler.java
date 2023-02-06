@@ -3,6 +3,7 @@ package site.zhenbin.simplerpc;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +40,10 @@ public class ServerHandler extends SimpleChannelInboundHandler<RpcRequest> {
             if (service != null) {
                 rpcResponse.result = method.invoke(service, msg.parameters);
             } else {
-                throw new RuntimeException(String.format("service class [%s] not find",serviceClass));
+                throw new RuntimeException(String.format("service class [%s] not find", serviceClass));
             }
+        } catch (InvocationTargetException e) {
+            rpcResponse.error = e.getTargetException().getMessage();
         } catch (Throwable e) {
             rpcResponse.error = e.getMessage();
         }

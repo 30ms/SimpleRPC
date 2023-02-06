@@ -1,6 +1,7 @@
 package site.zhenbin.simplerpc;
 
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
@@ -21,24 +22,28 @@ public class ClientHandler extends ChannelDuplexHandler {
         RpcResponse response = (RpcResponse) msg;
         CompletableFuture<RpcResponse> defaultFuture = futureMap.get(response.requestId);
         defaultFuture.complete(response);
-        super.channelRead(ctx, msg);
     }
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         RpcRequest request = (RpcRequest) msg;
-        futureMap.putIfAbsent(request.requestId, new CompletableFuture<>());
-        super.write(ctx, msg, promise);
+        CompletableFuture<RpcResponse> requestFuture = new CompletableFuture<>();
+        futureMap.putIfAbsent(request.requestId, requestFuture);
+        super.write(ctx, msg, promise.addListener((ChannelFutureListener) future -> {
+            if (future.cause() != null) {
+                requestFuture.completeExceptionally(future.cause());
+            } else if (future.isCancelled()) {
+                requestFuture.cancel(false);
+            }
+        }));
     }
 
-    public RpcResponse getRpcResponse(String requestId) {
+    public RpcResponse getRpcResponse(RpcRequest request) throws ExecutionException, InterruptedException, TimeoutException {
         try {
-            CompletableFuture<RpcResponse> future = futureMap.get(requestId);
+            CompletableFuture<RpcResponse> future = futureMap.get(request.requestId);
             return future.get(5, TimeUnit.SECONDS);
-        } catch (ExecutionException | InterruptedException | TimeoutException e) {
-            throw new RuntimeException(e);
-        } finally {
-            futureMap.remove(requestId);
+        }  finally {
+            futureMap.remove(request.requestId);
         }
     }
 }

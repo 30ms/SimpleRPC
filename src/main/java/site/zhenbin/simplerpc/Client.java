@@ -13,6 +13,9 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+
 /**
  * Rpc连接的客户端
  *
@@ -62,8 +65,8 @@ public class Client {
         }
     }
 
-    public RpcResponse send(RpcRequest request) throws InterruptedException {
-        channel.writeAndFlush(request).sync();
-        return clientHandler.getRpcResponse(request.requestId);
+    public RpcResponse send(RpcRequest request) throws InterruptedException, ExecutionException, TimeoutException {
+        channel.writeAndFlush(request).await();
+        return clientHandler.getRpcResponse(request);
     }
 }

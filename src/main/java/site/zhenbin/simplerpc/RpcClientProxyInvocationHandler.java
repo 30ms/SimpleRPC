@@ -4,6 +4,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * 客户端远程方法调用代理
@@ -30,7 +32,12 @@ public class RpcClientProxyInvocationHandler implements InvocationHandler {
         request.methodName = methodName;
         request.parameterClassNames = Arrays.stream(parameterTypes).map(Class::getName).toArray(String[]::new);
         request.parameters = args;
-        RpcResponse rpcResponse = client.send(request);
+        RpcResponse rpcResponse = null;
+        try {
+            rpcResponse = client.send(request);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
         if (rpcResponse.error != null) {
             throw new RuntimeException(rpcResponse.error);
         }
