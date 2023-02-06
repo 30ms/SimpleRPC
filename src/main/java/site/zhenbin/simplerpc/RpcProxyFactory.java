@@ -10,7 +10,17 @@ import java.lang.reflect.Proxy;
  **/
 public class RpcProxyFactory {
 
-    public static  <T> T create(Class<T> serviceInterface, Client client) {
-        return (T) Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(), new Class[]{serviceInterface}, new RpcClientProxyInvocationHandler(client));
+    private RpcClientProxyInvocationHandler handler;
+
+    public RpcProxyFactory(Client client) {
+        handler = new RpcClientProxyInvocationHandler(client);
+    }
+
+    public static RpcProxyFactory build(Client client) {
+        return new RpcProxyFactory(client);
+    }
+
+    public <T> T create(Class<T> serviceInterface) {
+        return (T) Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(), new Class[]{serviceInterface}, handler);
     }
 }

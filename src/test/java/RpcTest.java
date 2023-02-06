@@ -16,11 +16,13 @@ public class RpcTest {
 
     private static Client client;
     private static Server server;
+    private static RpcProxyFactory proxyFactory;
 
     @BeforeAll
     public static void init() throws InterruptedException {
         server = new Server(8000);
         client = new Client("localhost", 8000);
+        proxyFactory = RpcProxyFactory.build(client);
     }
 
     @AfterAll
@@ -31,7 +33,7 @@ public class RpcTest {
 
     @Test
     public void helloService() {
-        HelloService helloService = RpcProxyFactory.create(HelloService.class, client);
+        HelloService helloService = proxyFactory.create(HelloService.class);
         System.out.println(helloService.say("你好"));
     }
 }
